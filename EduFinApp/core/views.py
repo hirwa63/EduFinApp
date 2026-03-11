@@ -92,3 +92,22 @@ class TransactionDetailView(APIView):
             )
         transaction.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+        from core.models import Testing, Transaction, Budget
+from core.serializers import TestingSerializer, TransactionSerializer, BudgetSerializer
+
+class BudgetListView(APIView):
+    """
+    GET  /api/budgets/  -> List all budgets
+    POST /api/budgets/  -> Create a new budget
+    """
+    def get(self, request):
+        budgets = Budget.objects.all()
+        serializer = BudgetSerializer(budgets, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = BudgetSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
