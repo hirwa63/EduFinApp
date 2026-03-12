@@ -1,10 +1,11 @@
 from django.http import JsonResponse
+from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
-from core.models import Testing, Transaction
-from core.serializers import TestingSerializer, TransactionSerializer
+from core.models import Testing, Transaction, Budget
+from core.serializers import TestingSerializer, TransactionSerializer, BudgetSerializer
 
 
 # --- Existing views from Lab 1 ---
@@ -26,14 +27,9 @@ def testing_detail_view(request, id):
         return JsonResponse({'error': 'Record not found'}, status=404)
 
 
-# --- New CRUD views ---
+# --- Transaction CRUD views ---
 
 class TransactionListView(APIView):
-    """
-    GET  /api/transactions/  -> List all transactions
-    POST /api/transactions/  -> Create a new transaction
-    """
-
     def get(self, request):
         transactions = Transaction.objects.all()
         serializer = TransactionSerializer(transactions, many=True)
@@ -42,18 +38,14 @@ class TransactionListView(APIView):
     def post(self, request):
         serializer = TransactionSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            User = get_user_model()
+            user = User.objects.first()  # ✅ temporary fix for testing
+            serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class TransactionDetailView(APIView):
-    """
-    GET    /api/transactions/<id>/  -> Retrieve single transaction
-    PUT    /api/transactions/<id>/  -> Update a transaction
-    DELETE /api/transactions/<id>/  -> Delete a transaction
-    """
-
     def get_object(self, id):
         try:
             return Transaction.objects.get(id=id)
@@ -63,20 +55,14 @@ class TransactionDetailView(APIView):
     def get(self, request, id):
         transaction = self.get_object(id)
         if transaction is None:
-            return Response(
-                {"error": "Transaction not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = TransactionSerializer(transaction)
         return Response(serializer.data)
 
     def put(self, request, id):
         transaction = self.get_object(id)
         if transaction is None:
-            return Response(
-                {"error": "Transaction not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = TransactionSerializer(transaction, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -86,20 +72,14 @@ class TransactionDetailView(APIView):
     def delete(self, request, id):
         transaction = self.get_object(id)
         if transaction is None:
-            return Response(
-                {"error": "Transaction not found"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"error": "Transaction not found"}, status=status.HTTP_404_NOT_FOUND)
         transaction.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-        from core.models import Testing, Transaction, Budget
-from core.serializers import TestingSerializer, TransactionSerializer, BudgetSerializer
+
+
+# --- Budget views ---
 
 class BudgetListView(APIView):
-    """
-    GET  /api/budgets/  -> List all budgets
-    POST /api/budgets/  -> Create a new budget
-    """
     def get(self, request):
         budgets = Budget.objects.all()
         serializer = BudgetSerializer(budgets, many=True)
@@ -108,6 +88,8 @@ class BudgetListView(APIView):
     def post(self, request):
         serializer = BudgetSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save(user=request.user)
+            User = get_user_model()
+            user = User.objects.first()  # ✅ temporary fix for testing
+            serializer.save(user=user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
